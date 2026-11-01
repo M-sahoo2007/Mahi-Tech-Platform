@@ -1,0 +1,9 @@
+flowchart LR
+    Owner[Owner / Admin] --> Web[React Web App]
+    Staff[Team Members] --> Web
+    Client[Client Users] --> Web
+    Web --> API[Django REST API]
+    API --> DB[(Supabase PostgreSQL)]
+    API --> Storage[Private Supabase Storage]
+    API --> Email[Email Provider]
+    API --> Logs[Logs and Monitoring]

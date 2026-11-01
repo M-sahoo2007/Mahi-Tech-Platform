@@ -1,0 +1,27 @@
+erDiagram
+    USER ||--o| STAFF_PROFILE : has
+    USER ||--o| CLIENT_CONTACT : login
+    CLIENT ||--o{ CLIENT_CONTACT : has
+    LEAD_SOURCE ||--o{ LEAD : source
+    USER ||--o{ LEAD : owns
+    LEAD ||--o{ LEAD_ACTIVITY : has
+    CLIENT ||--o{ PROJECT : owns
+    USER ||--o{ PROJECT : manages
+    PROJECT ||--o{ PROJECT_MEMBER : includes
+    USER ||--o{ PROJECT_MEMBER : joins
+    PROJECT ||--o{ MILESTONE : contains
+    PROJECT ||--o{ TASK : contains
+    USER ||--o{ TASK : assigned
+    PROJECT ||--o{ PROJECT_UPDATE : has
+    CLIENT ||--o{ PROPOSAL : receives
+    PROPOSAL ||--|{ PROPOSAL_ITEM : contains
+    CLIENT ||--o{ INVOICE : billed
+    INVOICE ||--|{ INVOICE_ITEM : contains
+    CLIENT ||--o{ PAYMENT : pays
+    PAYMENT ||--o{ PAYMENT_ALLOCATION : allocated
+    INVOICE ||--o{ PAYMENT_ALLOCATION : receives
+    CLIENT ||--o{ DOCUMENT : owns
+    PROJECT ||--o{ DOCUMENT : stores
+    EXPENSE_CATEGORY ||--o{ EXPENSE : classifies
+    USER ||--o{ NOTIFICATION : receives
+    USER ||--o{ AUDIT_EVENT : acts
