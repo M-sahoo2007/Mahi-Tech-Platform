@@ -14,7 +14,7 @@
 | API schema | OpenAPI / Swagger | Proposed |
 | Database | Supabase-managed PostgreSQL | Confirmed |
 | ORM/migrations | Django ORM and migrations | Proposed |
-| Authentication | Django identity + JWT API access | Proposed |
+| Authentication | Django identity + session cookies for the first-party browser | Confirmed for the initial application |
 | Storage | Supabase Storage private buckets | Proposed |
 | PDF | ReportLab | Proposed |
 | Charts | Recharts | Proposed |
@@ -116,7 +116,7 @@ frontend/
 
 ## 3.7 Identity and authentication
 
-Baseline recommendation: Django is the single identity authority. Use Django's custom user model from the first migration and a maintained JWT implementation for API access. Define refresh rotation, token revocation and secure browser storage. For browser applications, consider secure HttpOnly cookies with a correct CSRF design. Do not casually store long-lived tokens in localStorage.
+Baseline: Django is the single identity and authorization authority. Use Django's custom user model from the first migration. The first-party browser uses Django Session Authentication with HttpOnly cookies and CSRF protection for state-changing requests. Do not store authentication credentials or tokens in localStorage or sessionStorage. JWT is not used unless the owner explicitly approves an architecture change.
 
 Do not enable Supabase Auth in parallel without an explicit architecture change and identity federation design. Avoid two competing user stores.
 

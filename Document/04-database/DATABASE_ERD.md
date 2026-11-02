@@ -39,7 +39,7 @@ erDiagram
 ## 4.2 Entity catalogue
 
 ### Identity
-- **User:** UUID, normalized unique email, password hash, active/staff flags, timestamps.
+- **User:** Django custom user with UUID primary key, normalized unique email login, password hash, active/staff/superuser flags, permissions, and timestamps. Django remains the single identity authority; Supabase Auth is not enabled.
 - **Role:** UUID, unique name, description.
 - **UserRole:** user FK, role FK, unique pair.
 - **StaffProfile:** user FK, display name, phone, job title, active state.
@@ -112,3 +112,11 @@ This first release is for one agency, not a public multi-tenant SaaS. Neverthele
 - Refunds, credit notes and payment reversal.
 - Client organization with multiple portal users.
 - Retention, deletion and archival rules.
+
+## 4.7 Initial database foundation
+
+- `accounts.User` extends Django's `AbstractBaseUser` and `PermissionsMixin`; its manager normalizes email addresses and creates password hashes and superusers using Django-supported behavior.
+- `AUTH_USER_MODEL` must be configured before the first project migration. The initial `accounts` migration owns the custom user table and precedes any business-app migrations.
+- Local development uses a fresh `backend/dev.sqlite3` database when PostgreSQL settings are absent. The existing `backend/db.sqlite3` is not a development fallback and must remain untouched.
+- Hosted environments use Supabase-managed PostgreSQL through backend-only environment variables and Django's PostgreSQL backend.
+- Apply migrations only after verifying the selected database configuration and reviewing the migration plan.

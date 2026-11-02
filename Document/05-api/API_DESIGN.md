@@ -7,7 +7,7 @@
 - Base path: `/api/v1/`
 - Transport: HTTPS in staging/production.
 - Format: JSON.
-- Authentication: bearer JWT or secure cookie strategy as finalized.
+- Authentication: Django session authentication using HttpOnly cookies and CSRF tokens for unsafe requests. JWT is not used.
 - Pagination: page-number or cursor pagination; choose one consistently.
 - Filtering and sorting: allowlisted query parameters only.
 - Dates: ISO 8601 with timezone.
@@ -62,15 +62,16 @@
 ## 5.5 Endpoint catalogue
 
 ### Authentication
-- `POST /api/v1/auth/login/`
-- `POST /api/v1/auth/refresh/`
-- `POST /api/v1/auth/logout/`
-- `POST /api/v1/auth/password-reset/`
-- `GET /api/v1/auth/me/`
+- `GET /api/auth/csrf/` (initialize the CSRF cookie/token)
+- `POST /api/auth/login/`
+- `POST /api/auth/logout/`
+- `GET /api/auth/me/`
+
+Public self-registration is not available. Administrators create accounts through the protected `/api/accounts/` endpoint.
 
 ### Dashboard
-- `GET /api/v1/dashboard/summary/`
-- `GET /api/v1/dashboard/activity/`
+- `GET /api/dashboard/summary/` (implemented; active Django session required)
+- `GET /api/v1/dashboard/activity/` (planned; activity feed not implemented)
 
 ### CRM
 - `GET /api/v1/leads/`
@@ -142,9 +143,9 @@
 - `GET /api/v1/reports/leads/`
 - `GET /api/v1/reports/projects/`
 - `GET /api/v1/reports/finance/`
-- `GET /api/v1/admin/users/`
-- `POST /api/v1/admin/users/invite/`
-- `PATCH /api/v1/admin/users/{id}/roles/`
+- `GET /api/accounts/` (implemented; admin permission required)
+- `POST /api/accounts/` (implemented; admin permission required)
+- `PATCH /api/accounts/{uuid}/` (implemented; admin permission required)
 
 ## 5.6 API security requirements
 
@@ -157,3 +158,9 @@
 - Do not trust totals sent by the browser; calculate totals on the server.
 - Return safe errors without stack traces or secrets.
 - Log request IDs and security-relevant events.
+
+## 5.7 Implemented authentication foundation
+
+The current foundation routes are implemented under `/api/` (the `/api/v1/` business API remains a future contract decision). The browser obtains a CSRF token from `/api/auth/csrf/`, sends it in `X-CSRFToken` for login, logout and account-management writes, and includes cookies with credentialed requests. The session and CSRF cookies are HttpOnly; production cookies require HTTPS. CORS and CSRF trust use explicit frontend origins and never wildcard origins.
+
+`GET /api/auth/me/` requires an active authenticated session. Account list/create/update routes require a superuser or the Django `accounts.manage_users` permission. Role values are allowlisted as `admin` and `team`; API account creation never sets superuser status. There is no public registration route.

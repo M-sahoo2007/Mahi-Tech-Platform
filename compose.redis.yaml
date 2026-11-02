@@ -1,0 +1,41 @@
+name: mahi-tech-redis-dev
+
+services:
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    mem_limit: 96m
+    secrets:
+      - redis_password
+    command:
+      - sh
+      - -c
+      - |
+        set -eu
+        password="$$(cat /run/secrets/redis_password)"
+        printf '%s\n' "user default on >$$password ~* +@all" > /run/redis/users.acl
+        chmod 600 /run/redis/users.acl
+        unset password
+        exec redis-server --aclfile /run/redis/users.acl --save "" --appendonly no --maxmemory 64mb --maxmemory-policy noeviction
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks:
+      - redis-private
+    tmpfs:
+      - /run/redis:rw,noexec,nosuid,size=64k
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - REDISCLI_AUTH="$$(cat /run/secrets/redis_password)" redis-cli ping | grep -q PONG
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 3s
+
+networks:
+  redis-private:
+    driver: bridge
+
+secrets:
+  redis_password:
+    file: .env.redis

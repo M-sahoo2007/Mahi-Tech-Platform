@@ -1,0 +1,1 @@
+"""Minimal client identity app used by CRM lead conversion."""

@@ -4,9 +4,10 @@
 
 ### Local development
 - Developer-owned local frontend and backend.
-- Isolated development database or Supabase development project.
+- Fresh local SQLite database at `backend/dev.sqlite3`, or a dedicated Supabase development project.
 - Test/sample data only.
 - `.env` files excluded from Git.
+- The pre-existing `backend/db.sqlite3` is not selected by settings and must not be used for custom-user migrations.
 
 ### Staging
 - Cloud deployment mirroring production architecture.
@@ -29,15 +30,63 @@ Backend server-side variables:
 - `DJANGO_SECRET_KEY`
 - `DJANGO_DEBUG`
 - `DJANGO_ALLOWED_HOSTS`
-- `DATABASE_URL`
-- `CORS_ALLOWED_ORIGINS`
-- `CSRF_TRUSTED_ORIGINS`
+- `DB_ENGINE` (`sqlite` for local development or `postgresql` for Supabase)
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASSWORD`
+- `DB_HOST`
+- `DB_PORT` (defaults to `5432`)
+- `DB_SSLMODE` (defaults to `require` for PostgreSQL)
+- `DB_CONN_MAX_AGE` (defaults to `60` seconds)
+- `FRONTEND_ORIGIN` (comma-separated explicit CORS and CSRF trusted origins)
+- `SESSION_COOKIE_SAMESITE` (`Lax` by default; `None` requires production HTTPS)
+- `CACHE_URL` (required Redis URL for production shared login throttling; use `rediss://`)
+- `LOGIN_RATE_LIMIT_MAX_ATTEMPTS` (defaults to `5`)
+- `LOGIN_RATE_LIMIT_WINDOW_SECONDS` (defaults to `900`)
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY` (server-side only, if required)
 - Email provider credentials
 - Error monitoring DSN
 
 Never put database credentials or Supabase service-role keys in `VITE_*` variables or browser bundles.
+Session authentication is cookie-based and does not use JWT. Keep the frontend and API on the same site where possible; use HTTPS and `SESSION_COOKIE_SAMESITE=None` only when a cross-site deployment requires it.
+Local debug mode without `CACHE_URL` uses process-local memory for development and tests only. Production refuses to start without `CACHE_URL` and requires Redis TLS. Set edge/gateway limits as an additional control; configure trusted proxy handling before relying on client IP rate limits behind a load balancer.
+
+### Local database setup
+
+Copy `backend/.env.example` to `backend/.env`. The example selects `DB_ENGINE=sqlite`; with `DJANGO_DEBUG=True`, Django uses the separate `backend/dev.sqlite3` file. No command in this setup should target `backend/db.sqlite3`.
+
+Run commands from `backend/` with its virtual environment active:
+
+```powershell
+python manage.py check
+python manage.py showmigrations
+python manage.py migrate --plan
+python manage.py migrate
+python manage.py test
+```
+
+`migrate` creates or updates only the database selected by the active environment. Review the engine and database name before applying it.
+
+### Supabase PostgreSQL setup
+
+Create or select a non-production Supabase project, then retrieve its PostgreSQL connection details from the Supabase dashboard. Set `DB_ENGINE=postgresql`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` in the backend environment. Set `DB_SSLMODE=require`; use the connection host and port provided for the selected direct or session-pooler connection. `DB_CONN_MAX_AGE` is optional.
+
+Store actual values only in the ignored backend `.env` for local development or in the hosting provider's secret manager. The `.env.example` values are placeholders. Never put these variables in the frontend or expose them through `VITE_*`.
+
+To verify connectivity without printing credentials, run from `backend/` after configuring a valid connection:
+
+```powershell
+python manage.py shell -c "from django.db import connection; connection.ensure_connection(); print('Database connection successful')"
+```
+
+No connection is attempted until PostgreSQL settings are explicitly configured.
+
+### Production database safeguards
+
+Set `DJANGO_DEBUG=False`, a generated `DJANGO_SECRET_KEY` of at least 50 characters, explicit non-wildcard `DJANGO_ALLOWED_HOSTS`, and complete PostgreSQL settings. Production rejects SQLite, placeholder database values, invalid ports, and PostgreSQL SSL modes that do not require TLS. Missing configuration raises an error rather than falling back to a local database.
+
+The initial `accounts.User` model is the Django identity authority, uses a UUID key and normalized unique email, and must be present in the first project migration. Do not enable Supabase Auth as a second user store.
 
 ## 10.3 CI/CD pipeline
 
